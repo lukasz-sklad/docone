@@ -1,3 +1,3 @@
-- Rebranded store listing to DocWrite and launcher shortcut label to DocW (based on WordCraft 0.18.1, v0.18.1.2)
+- Rebranded store listing to DocOne and launcher shortcut label to DocO (based on WordCraft 0.18.1, v0.18.1.2)
 - Refreshed Pixel 9 Pro screenshots including Sepia theme and Read Aloud floating window
 - Added F-Droid repository QR code directly to landing page and README

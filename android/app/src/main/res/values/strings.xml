@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DocW</string>
+    <string name="app_name">DocO</string>
     <string name="open_file">Open document</string>
     <string name="new_document">New blank document</string>
     <string name="recent_documents">Recent documents</string>
