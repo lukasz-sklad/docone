@@ -1,4 +1,4 @@
-# Wytyczne budowania i publikacji WordCraft Android (`word-apk`)
+# Wytyczne budowania i publikacji DocOne Android (`lukasz-sklad/docone`)
 
 Kompletny przewodnik techniczny (oraz zestaw instrukcji startowych dla agenta/dewelopera) do budowania, testowania i wydawania aplikacji **WordCraft Android** (`one.lmk.wordcraft`) na systemie **SteamOS** z użyciem kontenerów **Podman**, **cargo-ndk**, **Gradle** oraz telefonu testowego przez **ADB**.
 
@@ -8,7 +8,7 @@ Kompletny przewodnik techniczny (oraz zestaw instrukcji startowych dla agenta/de
 
 * **Lokalne repozytorium:** `/home/deck/GIT/android/craft/word-apk`
 * **Zdalne repozytoria (`git remote`):**
-  * **`origin`**: `git@github.com:lukasz-sklad/word-apk.git` — docelowe repozytorium wersji Androidowej (**tutaj** wypychamy commity przez `git push origin main`).
+  * **`origin`**: `git@github.com:lukasz-sklad/docone.git` — docelowe repozytorium wersji Androidowej (**tutaj** wypychamy commity przez `git push origin main`).
   * **`upstream`**: `https://github.com/storytold/wordcraft.git` — oficjalne repozytorium nadrzędne Storytold. **Nigdy nie wykonuj bezpośredniego `git push` do `upstream`.**
 * **Synchronizacja z `upstream` (opcjonalnie przed większym wydaniem):**
   Pobieraj zmiany przez `git fetch upstream` i łącz je lokalnie (`merge`/`rebase`) z zachowaniem naszych modyfikacji specyficznych dla Androida (`apps/wordcraft-android/`, `android/`, integracje lokalizacji i TTS).
@@ -235,7 +235,7 @@ git push origin main
 
 ## 7. Tryb lekki — budowa i testy na GitHub Actions (bez lokalnego APK)
 
-Nie za każdym razem trzeba kompilować cały projekt NDK i Gradle lokalnie na Steam Decku. Masz skonfigurowaną pełną automatyzację CI/CD w repozytorium `lukasz-sklad/word-apk`:
+Nie za każdym razem trzeba kompilować cały projekt NDK i Gradle lokalnie na Steam Decku. Masz skonfigurowaną pełną automatyzację CI/CD w repozytorium `lukasz-sklad/docone`:
 
 * **Kiedy wybierać tryb lekki (GitHub Actions):**
   * przy pobieraniu i scalaniu aktualizacji z `upstream/main` bez dużych zmian własnego UI Androida,
@@ -266,4 +266,4 @@ Nie za każdym razem trzeba kompilować cały projekt NDK i Gradle lokalnie na S
 * [ ] Każdy nowy asset wpisany w `ATTRIBUTION.md` (`cargo xtask assets` przechodzi).
 * [ ] W trybie pełnym: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo xtask layers`, `cargo xtask wasm` i testy (`wordcraft-android`, `speech::`, `i18n::`) przechodzą z `CRAFT_I18N_DIR=/craft-i18n` (w trybie lekkim minimalnie `fmt` + `layers` + `assets`, a pełne testy i APK wykonuje GitHub Actions).
 * [ ] Przy lokalnej budowie APK: biblioteki `.so` (`arm64-v8a` i `x86_64`) zbudowane z `-z max-page-size=16384`, `./gradlew assembleDebug assembleRelease --no-daemon` przechodzi z zamontowanym `/home/deck/.android:/root/.android` i zweryfikowane przez `adb`.
-* [ ] Zmiany wypchnięte do `origin/main` (`lukasz-sklad/word-apk`), **bez** wypychania do `upstream` (`storytold/wordcraft`).
+* [ ] Zmiany wypchnięte do `origin/main` (`lukasz-sklad/docone`), **bez** wypychania do `upstream` (`storytold/wordcraft`).

@@ -1179,7 +1179,7 @@ fn about_dialog(ui: &mut Ui, d: &mut Dialog) -> bool {
                 let (fork_notice, fork_link_label) = android_about_fork_notice(crate::i18n::current().code());
                 ui.add_space(4.0);
                 ui.label(egui::RichText::new(fork_notice).small());
-                ui.hyperlink_to(fork_link_label, "https://github.com/lukasz-sklad/word-apk");
+                ui.hyperlink_to(fork_link_label, "https://github.com/lukasz-sklad/docone");
                 ui.add_space(4.0);
             }
             ui.label(tl!("A free, open-source word processor written from scratch in Rust.\nPart of the Crafting Apps from the ArtCraft team."));
@@ -1632,13 +1632,13 @@ fn check_errors_dialog(ui: &mut Ui, d: &mut Dialog) -> bool {
 fn android_about_fork_notice(lang_code: &str) -> (&'static str, &'static str) {
     if lang_code == "pl" {
         (
-            "Nieoficjalny fork dla Androida (WordCraft APK / lukasz-sklad/word-apk), działający w 100% offline.\nBłędy aplikacji mobilnej zgłaszaj w repozytorium lukasz-sklad/word-apk — nie na kanale ArtCraft/Discord.",
-            "Repozytorium Androida i zgłoszenia błędów: github.com/lukasz-sklad/word-apk",
+            "Nieoficjalny fork dla Androida (DocOne / lukasz-sklad/docone), działający w 100% offline.\nBłędy aplikacji mobilnej zgłaszaj w repozytorium lukasz-sklad/docone — nie na kanale ArtCraft/Discord.",
+            "Repozytorium Androida i zgłoszenia błędów: github.com/lukasz-sklad/docone",
         )
     } else {
         (
-            "Unofficial Android fork (WordCraft APK / lukasz-sklad/word-apk), 100% offline.\nReport Android app issues at github.com/lukasz-sklad/word-apk — not on ArtCraft/Discord.",
-            "Android fork & issue tracker: github.com/lukasz-sklad/word-apk",
+            "Unofficial Android fork (DocOne / lukasz-sklad/docone), 100% offline.\nReport Android app issues at github.com/lukasz-sklad/docone — not on ArtCraft/Discord.",
+            "Android fork & issue tracker: github.com/lukasz-sklad/docone",
         )
     }
 }
@@ -1650,11 +1650,11 @@ mod android_about_tests {
     #[test]
     fn fork_notice_localizes_polish_and_english() {
         let (pl_notice, pl_link) = android_about_fork_notice("pl");
-        assert!(pl_notice.contains("lukasz-sklad/word-apk"));
-        assert!(pl_link.contains("github.com/lukasz-sklad/word-apk"));
+        assert!(pl_notice.contains("lukasz-sklad/docone"));
+        assert!(pl_link.contains("github.com/lukasz-sklad/docone"));
 
         let (en_notice, en_link) = android_about_fork_notice("en");
-        assert!(en_notice.contains("lukasz-sklad/word-apk"));
-        assert!(en_link.contains("github.com/lukasz-sklad/word-apk"));
+        assert!(en_notice.contains("lukasz-sklad/docone"));
+        assert!(en_link.contains("github.com/lukasz-sklad/docone"));
     }
 }

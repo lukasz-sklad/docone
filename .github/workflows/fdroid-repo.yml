@@ -206,7 +206,7 @@ jobs:
           config_lines = [
               f"repo_url: {json.dumps(repo_url)}",
               'repo_name: "DocOne F-Droid Repo"',
-              'repo_description: "Unofficial 100% offline Android document editor based on WordCraft (lukasz-sklad/word-apk)."',
+              'repo_description: "Unofficial 100% offline Android document editor based on WordCraft (lukasz-sklad/docone)."',
               f"keystore: {json.dumps(str(runner_temp / 'fdroid-repo.p12'))}",
               f"keystorepass: {json.dumps(os.environ['FDROID_REPO_KEYSTORE_PASS'])}",
               f"keypass: {json.dumps(os.environ['FDROID_REPO_KEY_PASS'])}",

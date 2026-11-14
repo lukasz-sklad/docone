@@ -7,4 +7,4 @@ Key features:
 - Bundled offline Polish Hunspell dictionary (pl_PL) and TeX hyphenation patterns alongside English proofing.
 - Privacy first: zero INTERNET permission, no Google Play Services, no trackers, no ads, and no background auto-updater.
 
-Disclaimer: This repository (lukasz-sklad/word-apk) is a community Android fork based on WordCraft and is not affiliated with or endorsed by the ArtCraft team. All non-open-source trademark files were removed from the repository.
+Disclaimer: This repository (lukasz-sklad/docone) is a community Android fork based on WordCraft and is not affiliated with or endorsed by the ArtCraft team. All non-open-source trademark files were removed from the repository.

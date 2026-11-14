@@ -29,9 +29,9 @@
 </p>
 
 > [!NOTE]
-> To repozytorium (`lukasz-sklad/word-apk`) jest **nieoficjalnym, społecznościowym forkiem Androidowym** projektu [storytold/wordcraft](https://github.com/storytold/wordcraft).
+> To repozytorium (`lukasz-sklad/docone`) jest **nieoficjalnym, społecznościowym forkiem Androidowym** projektu [storytold/wordcraft](https://github.com/storytold/wordcraft).
 > Działa w **100% offline** — w [`AndroidManifest.xml`](android/app/src/main/AndroidManifest.xml) brak uprawnienia `INTERNET`, nie ma tu Google Play Services, telemetrii, reklam ani wbudowanego mechanizmu aktualizacji sieciowych (`craft-update` wyłączony). Niewolne znaki towarowe (`docs/brand/`) zostały usunięte.
-> **Błędy aplikacji mobilnej zgłaszaj w tym repozytorium ([Issues](https://github.com/lukasz-sklad/word-apk/issues)), nie u autorów wersji desktopowej.**
+> **Błędy aplikacji mobilnej zgłaszaj w tym repozytorium ([Issues](https://github.com/lukasz-sklad/docone/issues)), nie u autorów wersji desktopowej.**
 
 ## Funkcje
 
@@ -65,16 +65,16 @@
 <table>
   <tr>
     <td align="center" width="190">
-      <a href="https://lukasz-sklad.github.io/word-apk/">
-        <img src="https://lukasz-sklad.github.io/word-apk/repo/index.png" width="160" height="160" alt="Kod QR repozytorium F-Droid / Droid-ify">
+      <a href="https://lukasz-sklad.github.io/docone/">
+        <img src="https://lukasz-sklad.github.io/docone/repo/index.png" width="160" height="160" alt="Kod QR repozytorium F-Droid / Droid-ify">
       </a>
       <br><sub>Zeskanuj w <b>F-Droid</b> lub <b>Droid-ify</b></sub>
     </td>
     <td>
       <ul>
-        <li><strong>Repozytorium F-Droid / Droid-ify (GitHub Pages):</strong> <a href="https://lukasz-sklad.github.io/word-apk/"><b>lukasz-sklad.github.io/word-apk</b></a> (dodanie jednym kliknięciem na telefonie albo przez skan kodu QR; adres indeksu: <code>https://lukasz-sklad.github.io/word-apk/repo</code>).</li>
+        <li><strong>Repozytorium F-Droid / Droid-ify (GitHub Pages):</strong> <a href="https://lukasz-sklad.github.io/docone/"><b>lukasz-sklad.github.io/docone</b></a> (dodanie jednym kliknięciem na telefonie albo przez skan kodu QR; adres indeksu: <code>https://lukasz-sklad.github.io/docone/repo</code>).</li>
         <li><strong>Odcisk SHA-256 repozytorium:</strong> <code>862557E9EC4D21D641BCD4962692A7C726DD2E6ED1D20091EBA92937C4B2336C</code></li>
-        <li><strong>Wydania APK:</strong> zakładka <a href="https://github.com/lukasz-sklad/word-apk/releases">Releases</a> (w tym weryfikacja sum <code>SHA256SUMS.txt</code> dla wydań z tagów <code>v*</code>).</li>
+        <li><strong>Wydania APK:</strong> zakładka <a href="https://github.com/lukasz-sklad/docone/releases">Releases</a> (w tym weryfikacja sum <code>SHA256SUMS.txt</code> dla wydań z tagów <code>v*</code>).</li>
         <li><strong>Wersjonowanie i <code>fdroiddata</code>:</strong> schemat <code>&lt;upstream&gt;.&lt;apk&gt;</code> (<code>0.18.1.1</code> → <code>0.18.1.2</code>, po aktualizacji rdzenia do <code>0.19.0</code> → <code>0.19.0.1</code> przy stale rosnącym <code>versionCode</code>); opis w <a href="packaging/fdroid/README.md"><code>packaging/fdroid/README.md</code></a> · <a href="packaging/fdroid/one.lmk.wordcraft.yml"><code>one.lmk.wordcraft.yml</code></a>.</li>
       </ul>
     </td>
@@ -112,7 +112,7 @@ Wyniki trafiają do `android/app/build/outputs/apk/{debug,release}/`.
 
 | Składnik | Licencja | Plik / źródło |
 |---|---|---|
-| Kod WordCraft oraz forka Androida (`lukasz-sklad/word-apk`) | **`MIT` OR `Apache-2.0`** | [`LICENSE-MIT`](LICENSE-MIT) · [`LICENSE-APACHE`](LICENSE-APACHE) · [`NOTICE`](NOTICE) |
+| Kod WordCraft oraz forka Androida (`lukasz-sklad/docone`) | **`MIT` OR `Apache-2.0`** | [`LICENSE-MIT`](LICENSE-MIT) · [`LICENSE-APACHE`](LICENSE-APACHE) · [`NOTICE`](NOTICE) |
 | Ikony, zrzuty ekranu i aktywa | Otwarte / własne | [`ATTRIBUTION.md`](ATTRIBUTION.md) |
 | Wbudowane czcionki (`Inter`, `JetBrains Mono`, `Source Sans 3`, `Source Serif 4`) | **`OFL-1.1`** | `assets/fonts/OFL-*.txt` |
 | Polski słownik Hunspell (`pl_PL`, SJP.PL) | **`Apache-2.0`** | `android/app/src/main/assets/language-packs/pl/LICENCES/` |

@@ -7,4 +7,4 @@ Najważniejsze funkcje:
 - Wbudowany offline'owy słownik polski (pl_PL, SJP.PL) i reguły dzielenia wyrazów TeX.
 - Prywatność: brak uprawnienia INTERNET w manifeście, brak Google Play Services, brak telemetrii i reklam.
 
-Uwaga: Ten fork (lukasz-sklad/word-apk) jest projektem społecznościowym dla systemu Android i nie jest oficjalnym produktem zespołu ArtCraft. Niewolne znaki towarowe zostały usunięte z repozytorium.
+Uwaga: Ten fork (lukasz-sklad/docone) jest projektem społecznościowym dla systemu Android i nie jest oficjalnym produktem zespołu ArtCraft. Niewolne znaki towarowe zostały usunięte z repozytorium.

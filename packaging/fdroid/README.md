@@ -1,4 +1,4 @@
-# Dystrybucja i auto-aktualizacje przez F-Droid (`word-apk`)
+# Dystrybucja i auto-aktualizacje przez F-Droid (`docone`)
 
 Repozytorium jest przygotowane zarówno pod **własny sklep F-Droid na GitHub Pages** (działa od razu po jednorazowym dodaniu kluczy podpisu), jak i pod zgłoszenie do **oficjalnego katalogu F-Droid (`fdroiddata`)**.
 
@@ -21,7 +21,7 @@ Przy każdej poprawce, którą chcesz wypuścić jako aktualizację:
    ```
 
 Po wypchnięciu tagu `v*`:
-* **Własne repozytorium F-Droid (GitHub Pages):** workflow [`.github/workflows/fdroid-repo.yml`](../../.github/workflows/fdroid-repo.yml) buduje podpisany plik `.apk`, dodaje go do GitHub Release i aktualizuje indeks F-Droid na GitHub Pages (`https://lukasz-sklad.github.io/word-apk/repo`). Aplikacja F-Droid / Droid-ify na telefonie sama widzi nowszy `versionCode` i pobiera aktualizację.
+* **Własne repozytorium F-Droid (GitHub Pages):** workflow [`.github/workflows/fdroid-repo.yml`](../../.github/workflows/fdroid-repo.yml) buduje podpisany plik `.apk`, dodaje go do GitHub Release i aktualizuje indeks F-Droid na GitHub Pages (`https://lukasz-sklad.github.io/docone/repo`). Aplikacja F-Droid / Droid-ify na telefonie sama widzi nowszy `versionCode` i pobiera aktualizację.
 * **Oficjalny F-Droid (`fdroiddata`):** serwer F-Droida wykrywa nowy tag dzięki `UpdateCheckMode: Tags` z przepisu [`one.lmk.wordcraft.yml`](one.lmk.wordcraft.yml), buduje aplikację czysto ze źródeł i publikuje aktualizację w głównym sklepie.
 
 ---
@@ -53,7 +53,7 @@ Dodaj w GitHub Secrets:
 Następnie w **GitHub → Settings → Pages** ustaw **Source: GitHub Actions**.
 
 Po pierwszym wypchnięciu tagu `v*` adres Twojego repozytorium F-Droid to:
-`https://lukasz-sklad.github.io/word-apk/repo`
+`https://lukasz-sklad.github.io/docone/repo`
 
 ---
 

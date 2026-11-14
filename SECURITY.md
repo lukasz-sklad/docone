@@ -1,9 +1,9 @@
-# Security policy (`lukasz-sklad/word-apk`)
+# Security policy (`lukasz-sklad/docone`)
 
 ## Reporting a vulnerability
 
 Please report security problems in this Android fork privately through GitHub:
-**[Report a vulnerability](https://github.com/lukasz-sklad/word-apk/security/advisories/new)**
+**[Report a vulnerability](https://github.com/lukasz-sklad/docone/security/advisories/new)**
 (Security tab › Advisories › Report a vulnerability).
 
 Do not open a public issue or pull request for an unpatched vulnerability.
@@ -17,7 +17,7 @@ Useful to include:
 
 ## Supported versions
 
-Fixes go into `main` (`lukasz-sklad/word-apk`) and ship in the next `0.<upstream>.<apk>` release. Older APK builds do not receive backports.
+Fixes go into `main` (`lukasz-sklad/docone`) and ship in the next `0.<upstream>.<apk>` release. Older APK builds do not receive backports.
 
 ## Scope & threat model (Android APK)
 

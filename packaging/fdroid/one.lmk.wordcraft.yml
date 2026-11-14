@@ -3,9 +3,9 @@ Categories:
   - Office
 License: MIT OR Apache-2.0
 AuthorName: WordCraft contributors, lukasz-sklad
-SourceCode: https://github.com/lukasz-sklad/word-apk
-IssueTracker: https://github.com/lukasz-sklad/word-apk/issues
-Changelog: https://github.com/lukasz-sklad/word-apk/releases
+SourceCode: https://github.com/lukasz-sklad/docone
+IssueTracker: https://github.com/lukasz-sklad/docone/issues
+Changelog: https://github.com/lukasz-sklad/docone/releases
 
 Name: DocOne
 Summary: Offline document editor based on WordCraft (.docx, .odt, .rtf, PDF)
@@ -22,7 +22,7 @@ Description: |-
   * Privacy: no INTERNET permission, no Google Play Services, no trackers, no ads
 
 RepoType: git
-Repo: https://github.com/lukasz-sklad/word-apk.git
+Repo: https://github.com/lukasz-sklad/docone.git
 
 Builds:
   - versionName: 0.18.1.2
