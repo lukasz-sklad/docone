@@ -62,10 +62,24 @@
 
 ## Pobieranie i F-Droid
 
-* **Wydania APK:** zakładka [Releases](https://github.com/lukasz-sklad/word-apk/releases) (w tym weryfikacja sum `SHA256SUMS.txt` dla wydań z tagów `v*`).
-* **F-Droid (własne repozytorium GitHub Pages i przepis `fdroiddata`):**
-  * Schemat numeracji **`<upstream>.<apk>`** — np. **`0.18.1.1`** (rdzeń WordCraft `0.18.1` + nasze wydanie `.1`), kolejna poprawka Androida to `0.18.1.2`, a po aktualizacji bazy do `0.19.0` → `0.19.0.1` przy stale rosnącym `versionCode`.
-  * Konfiguracja repozytorium, sekretów podpisu i opis zgłoszenia do `fdroid/fdroiddata`: [`packaging/fdroid/README.md`](packaging/fdroid/README.md) · [`one.lmk.wordcraft.yml`](packaging/fdroid/one.lmk.wordcraft.yml).
+<table>
+  <tr>
+    <td align="center" width="190">
+      <a href="https://lukasz-sklad.github.io/word-apk/">
+        <img src="https://lukasz-sklad.github.io/word-apk/repo/index.png" width="160" height="160" alt="Kod QR repozytorium F-Droid / Droid-ify">
+      </a>
+      <br><sub>Zeskanuj w <b>F-Droid</b> lub <b>Droid-ify</b></sub>
+    </td>
+    <td>
+      <ul>
+        <li><strong>Repozytorium F-Droid / Droid-ify (GitHub Pages):</strong> <a href="https://lukasz-sklad.github.io/word-apk/"><b>lukasz-sklad.github.io/word-apk</b></a> (dodanie jednym kliknięciem na telefonie albo przez skan kodu QR; adres indeksu: <code>https://lukasz-sklad.github.io/word-apk/repo</code>).</li>
+        <li><strong>Odcisk SHA-256 repozytorium:</strong> <code>862557E9EC4D21D641BCD4962692A7C726DD2E6ED1D20091EBA92937C4B2336C</code></li>
+        <li><strong>Wydania APK:</strong> zakładka <a href="https://github.com/lukasz-sklad/word-apk/releases">Releases</a> (w tym weryfikacja sum <code>SHA256SUMS.txt</code> dla wydań z tagów <code>v*</code>).</li>
+        <li><strong>Wersjonowanie i <code>fdroiddata</code>:</strong> schemat <code>&lt;upstream&gt;.&lt;apk&gt;</code> (<code>0.18.1.1</code> → <code>0.18.1.2</code>, po aktualizacji rdzenia do <code>0.19.0</code> → <code>0.19.0.1</code> przy stale rosnącym <code>versionCode</code>); opis w <a href="packaging/fdroid/README.md"><code>packaging/fdroid/README.md</code></a> · <a href="packaging/fdroid/one.lmk.wordcraft.yml"><code>one.lmk.wordcraft.yml</code></a>.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
 ## Budowanie APK
 
