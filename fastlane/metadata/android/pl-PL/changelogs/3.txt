@@ -1,0 +1,3 @@
+- Przeniesiono repozytorium i odnośniki F-Droid na lukasz-sklad/docone (okno O programie i dokumentacja)
+- Zmieniono nazwy plików wydań na docone-v0.18.1.3.apk oraz .aab
+- Przebudowano indeks F-Droid i kod QR pod adresem https://lukasz-sklad.github.io/docone/repo

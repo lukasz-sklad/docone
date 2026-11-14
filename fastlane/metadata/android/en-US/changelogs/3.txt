@@ -1,0 +1,3 @@
+- Migrated repository and F-Droid links to lukasz-sklad/docone (About dialog and docs)
+- Updated release package filenames to docone-v0.18.1.3.apk and .aab
+- Rebuilt F-Droid repository index and QR code for https://lukasz-sklad.github.io/docone/repo
