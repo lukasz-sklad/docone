@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="assets/app-icon/hicolor/256x256/apps/ai.storyteller.wordcraft.png" width="104" height="104" alt="WordCraft (APK) icon">
+  <img src="assets/app-icon/hicolor/256x256/apps/ai.storyteller.wordcraft.png" width="104" height="104" alt="DocWrite icon">
 </p>
 
-<h1 align="center">WordCraft (APK)</h1>
+<h1 align="center">DocWrite</h1>
 
 <p align="center">
   <b>Nieoficjalny, w 100% offline edytor dokumentów dla Androida oparty na <a href="https://github.com/storytold/wordcraft">WordCraft</a></b><br>
-  <sub>Unofficial 100% offline Android fork based on WordCraft (written in Rust &amp; Kotlin)</sub>
+  <sub>DocWrite (short launcher label: <code>DocW</code>) — unofficial 100% offline Android editor based on WordCraft (Rust &amp; Kotlin)</sub>
 </p>
 
 <p align="center">

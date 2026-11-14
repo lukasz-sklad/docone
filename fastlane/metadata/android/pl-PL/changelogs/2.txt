@@ -1,0 +1,3 @@
+- Zmiana nazwy w sklepie na DocWrite oraz krótkiej etykiety pod ikoną na DocW (na bazie WordCraft 0.18.1, v0.18.1.2)
+- Odświeżone zrzuty ekranu z Pixela 9 Pro (w tym motyw Sepia i okno Czytaj na głos)
+- Dodany kod QR repozytorium F-Droid bezpośrednio na stronie sklepu i w README

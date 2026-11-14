@@ -132,7 +132,7 @@ jobs:
             gh release upload "$TAG" "$APK_PATH" "$SUMS_PATH" --clobber
           else
             gh release create "$TAG" "$APK_PATH" "$SUMS_PATH" \
-              --title "WordCraft (APK) ${TAG}" \
+              --title "DocWrite ${TAG}" \
               --notes "Signed offline Android release (versionCode ${APP_VERSION_CODE}, based on WordCraft)."
           fi
 
@@ -205,8 +205,8 @@ jobs:
           # Write F-Droid config.yml with valid zero-indent keys and safe JSON string literals.
           config_lines = [
               f"repo_url: {json.dumps(repo_url)}",
-              'repo_name: "WordCraft (APK) F-Droid Repo"',
-              'repo_description: "Unofficial 100% offline Android fork based on WordCraft (lukasz-sklad/word-apk)."',
+              'repo_name: "DocWrite F-Droid Repo"',
+              'repo_description: "Unofficial 100% offline Android document editor based on WordCraft (lukasz-sklad/word-apk)."',
               f"keystore: {json.dumps(str(runner_temp / 'fdroid-repo.p12'))}",
               f"keystorepass: {json.dumps(os.environ['FDROID_REPO_KEYSTORE_PASS'])}",
               f"keypass: {json.dumps(os.environ['FDROID_REPO_KEY_PASS'])}",
@@ -227,7 +227,7 @@ jobs:
               f"SourceCode: https://github.com/{owner_repo}",
               f"IssueTracker: https://github.com/{owner_repo}/issues",
               f"Changelog: https://github.com/{owner_repo}/releases",
-              "Name: WordCraft (APK)",
+              "Name: DocWrite",
               "",
           ])
           (work / "metadata" / "one.lmk.wordcraft.yml").write_text(app_meta, encoding="utf-8")
@@ -237,7 +237,7 @@ jobs:
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width,initial-scale=1">
-            <title>WordCraft (APK) — Repo F-Droid</title>
+            <title>DocWrite — Repo F-Droid</title>
             <style>
               body {{ font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #18181b; background: #f8fafc; }}
               .card {{ background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
@@ -256,10 +256,10 @@ jobs:
           <body>
             <div class="card">
               <div class="hdr">
-                <img src="icon.png" alt="Ikona WordCraft (APK)">
-                <h1>WordCraft (APK) — repozytorium F-Droid</h1>
+                <img src="icon.png" alt="Ikona DocWrite">
+                <h1>DocWrite — repozytorium F-Droid</h1>
               </div>
-              <p>Nieoficjalny, w 100% offline fork edytora WordCraft (bez uprawnienia INTERNET, bez Google Play Services).</p>
+              <p>Nieoficjalny, w 100% offline edytor dokumentów oparty na WordCraft (bez uprawnienia INTERNET, bez Google Play Services).</p>
               <div class="grid">
                 <a class="qr-box" href="{html.escape(fdroid_uri, quote=True)}" title="Zeskanuj kod QR w F-Droid lub Droid-ify">
                   <img src="repo/index.png" alt="Kod QR repozytorium F-Droid / Droid-ify">
