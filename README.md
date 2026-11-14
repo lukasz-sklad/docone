@@ -45,13 +45,17 @@
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="260" alt="Pisanie po polsku z klawiaturą Gboard i autokorektą">
+    <td align="center" width="33%">
+      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="240" alt="Pisanie po polsku z klawiaturą Gboard i autokorektą">
       <br><sub>Pisanie po polsku z obsługą podpowiedzi Gboard</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="260" alt="Tryb zaznaczania Zazn i formatowanie tekstu na pasku">
+    <td align="center" width="33%">
+      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="240" alt="Tryb zaznaczania Zazn i formatowanie tekstu na pasku">
       <br><sub>Zaznaczanie jednym palcem (<code>Zazn</code>) i pasek narzędzi</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="240" alt="Motyw Sepia oraz przesuwalne okienko Czytaj na głos">
+      <br><sub>Motyw Sepia i przesuwalne okno „Czytaj na głos” (z przyciskiem oka)</sub>
     </td>
   </tr>
 </table>
