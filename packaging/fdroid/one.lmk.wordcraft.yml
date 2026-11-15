@@ -29,6 +29,7 @@ Builds:
     prebuild:
       - sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - sed -i -e '/foojay/d' settings.gradle.kts
+      - sed -i -e '/jvmToolchain/d' app/build.gradle.kts
     build:
       - export PATH="$HOME/.cargo/bin:$PATH"
       - rustup default 1.99.0
