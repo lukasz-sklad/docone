@@ -47,7 +47,7 @@ jobs:
 
       - name: Compile Sources for CodeQL
         working-directory: android
-        run: ./gradlew compileReleaseSources --rerun-tasks --no-build-cache --no-configuration-cache
+        run: ./gradlew compileFossReleaseSources compilePlayReleaseSources --rerun-tasks --no-build-cache --no-configuration-cache
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
@@ -126,32 +126,45 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew testDebugUnitTest bundleRelease assembleRelease --stacktrace
+          ./gradlew testFossDebugUnitTest testPlayDebugUnitTest assembleFossRelease bundlePlayRelease assemblePlayRelease --stacktrace
 
       - name: Prepare Versioned Packages
         run: |
-          RELEASE_APK=$(find android/app/build/outputs/apk/release -maxdepth 1 -name "*.apk" -print -quit)
-          if [ -n "$RELEASE_APK" ] && [ "$RELEASE_APK" != "android/app/build/outputs/apk/release/docone-v${APP_VERSION}.apk" ]; then
-            cp -f "$RELEASE_APK" "android/app/build/outputs/apk/release/docone-v${APP_VERSION}.apk"
+          RELEASE_APK=$(find android/app/build/outputs/apk/foss/release -maxdepth 1 -name "*.apk" -print -quit)
+          if [ -n "$RELEASE_APK" ] && [ "$RELEASE_APK" != "android/app/build/outputs/apk/foss/release/docone-v${APP_VERSION}.apk" ]; then
+            cp -f "$RELEASE_APK" "android/app/build/outputs/apk/foss/release/docone-v${APP_VERSION}.apk"
           fi
-          echo "Prepared APK: $(find android/app/build/outputs/apk/release -name '*.apk')"
+          echo "Prepared FOSS APK: $(find android/app/build/outputs/apk/foss/release -name '*.apk')"
 
-          RELEASE_AAB=$(find android/app/build/outputs/bundle/release -maxdepth 1 -name "*.aab" -print -quit)
-          if [ -n "$RELEASE_AAB" ] && [ "$RELEASE_AAB" != "android/app/build/outputs/bundle/release/docone-v${APP_VERSION}.aab" ]; then
-            cp -f "$RELEASE_AAB" "android/app/build/outputs/bundle/release/docone-v${APP_VERSION}.aab"
+          PLAY_APK=$(find android/app/build/outputs/apk/play/release -maxdepth 1 -name "*.apk" -print -quit)
+          if [ -n "$PLAY_APK" ] && [ "$PLAY_APK" != "android/app/build/outputs/apk/play/release/docone-play-v${APP_VERSION}.apk" ]; then
+            cp -f "$PLAY_APK" "android/app/build/outputs/apk/play/release/docone-play-v${APP_VERSION}.apk"
           fi
-          echo "Prepared AAB: $(find android/app/build/outputs/bundle/release -name '*.aab')"
+          echo "Prepared Play APK: $(find android/app/build/outputs/apk/play/release -name '*.apk')"
+
+          RELEASE_AAB=$(find android/app/build/outputs/bundle/playRelease -maxdepth 1 -name "*.aab" -print -quit)
+          if [ -n "$RELEASE_AAB" ] && [ "$RELEASE_AAB" != "android/app/build/outputs/bundle/playRelease/docone-v${APP_VERSION}.aab" ]; then
+            cp -f "$RELEASE_AAB" "android/app/build/outputs/bundle/playRelease/docone-v${APP_VERSION}.aab"
+          fi
+          echo "Prepared Play AAB: $(find android/app/build/outputs/bundle/playRelease -name '*.aab')"
 
       - name: Upload Release AAB
         uses: actions/upload-artifact@v4
         with:
           name: docone-v${{ env.APP_VERSION }}-release-aab
-          path: android/app/build/outputs/bundle/release/docone-v${{ env.APP_VERSION }}.aab
+          path: android/app/build/outputs/bundle/playRelease/docone-v${{ env.APP_VERSION }}.aab
           retention-days: 30
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: docone-v${{ env.APP_VERSION }}-release-apk
-          path: android/app/build/outputs/apk/release/docone-v${{ env.APP_VERSION }}.apk
+          path: android/app/build/outputs/apk/foss/release/docone-v${{ env.APP_VERSION }}.apk
+          retention-days: 30
+
+      - name: Upload Play Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: docone-play-v${{ env.APP_VERSION }}-release-apk
+          path: android/app/build/outputs/apk/play/release/docone-play-v${{ env.APP_VERSION }}.apk
           retention-days: 30

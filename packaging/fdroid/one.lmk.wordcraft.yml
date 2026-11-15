@@ -30,7 +30,7 @@ Builds:
     commit: v0.18.1.3
     subdir: android
     gradle:
-      - yes
+      - foss
     srclibs:
       - rustup@1.28.2
       - craft-i18n@e56d26244bbac099bfd42e23fb12f78a4be418a7

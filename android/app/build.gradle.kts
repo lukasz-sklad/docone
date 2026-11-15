@@ -27,6 +27,18 @@ android {
     }
   }
 
+  flavorDimensions += "distribution"
+  productFlavors {
+    create("foss") {
+      dimension = "distribution"
+      applicationId = "one.lmk.wordcraft"
+    }
+    create("play") {
+      dimension = "distribution"
+      applicationId = "one.lmk.docone"
+    }
+  }
+
   signingConfigs {
     create("release") {
       if (keystorePropertiesFile.exists()) {
@@ -81,5 +93,7 @@ dependencies {
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.games.activity)
+  "playImplementation"(libs.androidx.mediarouter)
+  "playImplementation"(libs.play.services.cast.framework)
   testImplementation(libs.junit)
 }

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DocO</string>
     <string name="open_file">Otwórz dokument</string>
     <string name="new_document">Nowy pusty dokument</string>
     <string name="recent_documents">Ostatnie dokumenty</string>

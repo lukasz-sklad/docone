@@ -107,11 +107,11 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew testDebugUnitTest assembleRelease --no-daemon
+          ./gradlew testFossDebugUnitTest assembleFossRelease --no-daemon
 
       - name: Stage Release APK & SHA256SUMS
         run: |
-          RELEASE_APK=$(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' ! -name '*-unsigned.apk' -print -quit)
+          RELEASE_APK=$(find android/app/build/outputs/apk/foss/release -maxdepth 1 -name '*.apk' ! -name '*-unsigned.apk' -print -quit)
           if [ -z "$RELEASE_APK" ]; then
             echo "::error::Expected signed release APK but none was produced."
             exit 1

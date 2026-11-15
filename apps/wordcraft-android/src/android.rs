@@ -201,9 +201,10 @@ impl ActivityBridge {
         let Ok(w) = i32::try_from(width) else { return };
         let Ok(h) = i32::try_from(height) else { return };
         if w <= 0 || h <= 0 || pixels.len() != (width as usize).saturating_mul(height as usize).saturating_mul(4) {
+            log::warn!("presentation frame mismatch w={width} h={height} len={}", pixels.len());
             return;
         }
-        let _ = self.vm.attach_current_thread(|env| -> jni::errors::Result<()> {
+        if let Err(err) = self.vm.attach_current_thread(|env| -> jni::errors::Result<()> {
             let jbytes = env.byte_array_from_slice(pixels)?;
             let _ = env.call_method(
                 &*self.activity,
@@ -212,7 +213,9 @@ impl ActivityBridge {
                 &[JValue::Object(&jbytes), JValue::Int(w), JValue::Int(h), JValue::Int(backdrop_argb)],
             )?;
             Ok(())
-        });
+        }) {
+            log::warn!("updatePresentationFrame JNI error: {err:?}");
+        }
     }
 
     fn clear_presentation(&self) {

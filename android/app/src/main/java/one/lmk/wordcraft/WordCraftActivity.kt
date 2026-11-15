@@ -163,6 +163,7 @@ class WordCraftActivity : GameActivity() {
         installInsetsListener()
         registerDisplayListener()
         syncPresentationDisplay()
+        castController
         installFocusGuard()
         syncSystemNightMode(resources.configuration)
         val isNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -173,6 +174,7 @@ class WordCraftActivity : GameActivity() {
 
     override fun onDestroy() {
         unregisterDisplayListener()
+        castController.onDestroy()
         dismissPresentation()
         synchronized(ttsLock) {
             activeUtteranceId = ""
@@ -255,13 +257,23 @@ class WordCraftActivity : GameActivity() {
         return ev.pointerCount > 0 && ev.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE
     }
 
+    @Volatile
     private var activePresentation: DocumentPresentation? = null
     private var lastPresentationSpec: PresentationDisplaySpec? = null
+    private var lastNativeOutputTarget: Triple<Int, Int, Int> = Triple(0, 0, 0)
+    private val castController: CastPlatformController by lazy {
+        PlatformCastFactory.create(this) {
+            runOnUiThread {
+                reportActiveDisplayTarget()
+            }
+        }
+    }
 
     override fun onResume() {
         super.onResume()
         requestSafeInsets()
         syncPresentationDisplay()
+        castController.onResume()
         if (imeWanted) {
             imeProxy.post {
                 if (imeWanted) {
@@ -388,43 +400,38 @@ class WordCraftActivity : GameActivity() {
     }
 
     @Suppress("unused")
-    fun openCastSettings(): Int {
-        val actions = CastDisplayHelper.castSettingsIntentActions()
-        if (actions.isEmpty()) return 0
-        runOnUiThread {
-            for (action in actions) {
-                try {
-                    startActivity(Intent(action))
-                    break
-                } catch (_: Throwable) {
-                }
-            }
-        }
-        return 1
-    }
+    fun openCastSettings(): Int = if (castController.openCastMenu()) 1 else 0
 
     @Suppress("unused")
     fun updatePresentationFrame(rgba: ByteArray, width: Int, height: Int, backdropArgb: Int) {
         if (!CastDisplayHelper.isValidPresentationFrame(width, height, rgba.size)) return
-        val bitmap = try {
-            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
-                copyPixelsFromBuffer(ByteBuffer.wrap(rgba))
+        val localActive = activePresentation
+        if (localActive != null && localActive.isShowing) {
+            val bitmap = try {
+                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+                    copyPixelsFromBuffer(ByteBuffer.wrap(rgba))
+                }
+            } catch (_: Throwable) {
+                return
             }
-        } catch (_: Throwable) {
+            runOnUiThread {
+                val presentation = activePresentation
+                if (isFinishing || isDestroyed || presentation == null || !presentation.isShowing) {
+                    if (!bitmap.isRecycled) bitmap.recycle()
+                    return@runOnUiThread
+                }
+                presentation.updateBitmap(bitmap, backdropArgb)
+            }
             return
         }
-        runOnUiThread {
-            val presentation = activePresentation
-            if (isFinishing || isDestroyed || presentation == null || !presentation.isShowing) {
-                if (!bitmap.isRecycled) bitmap.recycle()
-                return@runOnUiThread
-            }
-            presentation.updateBitmap(bitmap, backdropArgb)
+        if (castController.isRemoteSessionActive()) {
+            castController.onPageFrame(rgba, width, height, backdropArgb)
         }
     }
 
     @Suppress("unused")
     fun clearPresentation() {
+        castController.onClearFrame()
         runOnUiThread {
             activePresentation?.clearFrame()
         }
@@ -455,6 +462,7 @@ class WordCraftActivity : GameActivity() {
         }
         val current = activePresentation
         if (current != null && current.isShowing && lastPresentationSpec == preferred) {
+            reportActiveDisplayTarget()
             return
         }
         dismissPresentationQuietly()
@@ -463,7 +471,7 @@ class WordCraftActivity : GameActivity() {
             presentation.show()
             activePresentation = presentation
             lastPresentationSpec = preferred
-            nativeOnPresentationDisplay(1, preferred.widthPx, preferred.heightPx)
+            reportActiveDisplayTarget()
         } catch (_: Throwable) {
             try {
                 presentation.dismiss()
@@ -471,7 +479,7 @@ class WordCraftActivity : GameActivity() {
             }
             activePresentation = null
             lastPresentationSpec = null
-            nativeOnPresentationDisplay(0, 0, 0)
+            reportActiveDisplayTarget()
         }
     }
 
@@ -487,10 +495,27 @@ class WordCraftActivity : GameActivity() {
     }
 
     private fun dismissPresentation() {
-        val hadActive = activePresentation != null || lastPresentationSpec != null
         dismissPresentationQuietly()
-        if (hadActive) {
-            nativeOnPresentationDisplay(0, 0, 0)
+        reportActiveDisplayTarget()
+    }
+
+    private fun reportActiveDisplayTarget() {
+        val wired = lastPresentationSpec?.takeIf { activePresentation?.isShowing == true }
+        val next = when {
+            wired != null -> Triple(1, wired.widthPx, wired.heightPx)
+            castController.isRemoteSessionActive() -> {
+                val size = castController.remoteDisplaySizePx()
+                if (size != null && size.first > 0 && size.second > 0) {
+                    Triple(1, size.first, size.second)
+                } else {
+                    Triple(1, 1920, 1080)
+                }
+            }
+            else -> Triple(0, 0, 0)
+        }
+        if (next != lastNativeOutputTarget) {
+            lastNativeOutputTarget = next
+            nativeOnPresentationDisplay(next.first, next.second, next.third)
         }
     }
 
