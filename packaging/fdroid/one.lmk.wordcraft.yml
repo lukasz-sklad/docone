@@ -16,7 +16,7 @@ Builds:
   - versionName: 0.18.1.4
     versionCode: 4
     commit: 1f8c2b93ed3deb6cb32b58dbae0f1ecbe04aca46
-    subdir: android
+    subdir: android/app
     sudo:
       - apt-get update
       - apt-get install -y build-essential pkg-config rustup
@@ -28,8 +28,8 @@ Builds:
       - android/gradle/wrapper/gradle-wrapper.jar
     prebuild:
       - sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      - sed -i -e '/foojay/d' settings.gradle.kts
-      - sed -i -e '/jvmToolchain/d' app/build.gradle.kts
+      - sed -i -e '/foojay/d' ../settings.gradle.kts
+      - sed -i -e '/jvmToolchain/d' build.gradle.kts
     build:
       - export PATH="$HOME/.cargo/bin:$PATH"
       - rustup default 1.99.0
@@ -39,7 +39,7 @@ Builds:
       - export CRAFT_I18N_DIR=$$craft-i18n$$
       - export CRAFT_I18N_REQUIRED=1
       - export RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"
-      - pushd .. && cargo ndk -t arm64-v8a -t x86_64 -o android/app/src/main/jniLibs
+      - pushd ../.. && cargo ndk -t arm64-v8a -t x86_64 -o android/app/src/main/jniLibs
         build --release --locked -p wordcraft-android && popd
     ndk: r27c
 
