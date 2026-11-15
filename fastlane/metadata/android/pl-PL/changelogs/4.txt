@@ -1,0 +1,3 @@
+- Rozdzielono dystrybucje na wariant offline foss (Doc, one.lmk.wordcraft) oraz Google Play (DocO, one.lmk.docone z Google Cast)
+- Dodano obsługę kolorowych emoji oraz offline'owy tryb prezentacji strony dokumentu na ekranach HDMI / DisplayPort
+- Zaktualizowano konfigurację wydań i repozytorium F-Droid dla wersji v0.18.1.4

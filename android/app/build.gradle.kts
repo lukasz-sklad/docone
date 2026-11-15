@@ -19,8 +19,8 @@ android {
     applicationId = "one.lmk.wordcraft"
     minSdk = 26
     targetSdk = 36
-    versionCode = 3
-    versionName = "0.18.1.3"
+    versionCode = 4
+    versionName = "0.18.1.4"
 
     ndk {
       abiFilters.addAll(listOf("arm64-v8a", "x86_64"))

@@ -1,0 +1,3 @@
+- Split distribution flavors into 100% offline foss (Doc, one.lmk.wordcraft) and Google Play (DocO, one.lmk.docone) with Google Cast
+- Added color emoji font fallback and offline external Presentation display output (HDMI / DisplayPort)
+- Updated CI/CD and F-Droid release packaging for v0.18.1.4
