@@ -1,25 +1,13 @@
 Categories:
+  - Text Editor
   - Writing
-  - Office
-License: MIT OR Apache-2.0
+License: MIT
 AuthorName: WordCraft contributors, lukasz-sklad
 SourceCode: https://github.com/lukasz-sklad/docone
 IssueTracker: https://github.com/lukasz-sklad/docone/issues
 Changelog: https://github.com/lukasz-sklad/docone/releases
 
 Name: DocOne
-Summary: Offline document editor based on WordCraft (.docx, .odt, .rtf, PDF)
-Description: |-
-  DocOne is an unofficial, 100% offline Android editor based on WordCraft
-  (storytold/wordcraft), written in pure Rust and Kotlin.
-
-  Features:
-  * Opens and saves .docx (OOXML), .odt, .rtf, .html, .md and .txt; opens legacy .doc files; exports PDF
-  * Bilingual top toolbar (PL / EN) with display-cutout and freeform/desktop-window awareness
-  * Native Android IME / Gboard composition, suggestions and voice dictation support
-  * Single-finger touch selection mode (Sel / Zazn) and two-finger pinch zoom
-  * Bundled offline Polish dictionary (pl_PL) and TeX hyphenation alongside English proofing
-  * Privacy: no INTERNET permission, no Google Play Services, no trackers, no ads
 
 RepoType: git
 Repo: https://github.com/lukasz-sklad/docone.git
@@ -27,29 +15,34 @@ Repo: https://github.com/lukasz-sklad/docone.git
 Builds:
   - versionName: 0.18.1.4
     versionCode: 4
-    commit: v0.18.1.4
+    commit: 1f8c2b93ed3deb6cb32b58dbae0f1ecbe04aca46
     subdir: android
+    sudo:
+      - apt-get update
+      - apt-get install -y build-essential pkg-config rustup
     gradle:
       - foss
     srclibs:
-      - rustup@1.28.2
       - craft-i18n@e56d26244bbac099bfd42e23fb12f78a4be418a7
-    ndk: r27c
     rm:
       - android/gradle/wrapper/gradle-wrapper.jar
     prebuild:
-      - $$rustup$$/rustup-init.sh -y --no-modify-path --default-toolchain 1.95.0 --profile minimal --target aarch64-linux-android x86_64-linux-android
-      - source "$HOME/.cargo/env"
-      - cargo install cargo-ndk --locked
-      - pushd .. && cargo fetch --locked && popd
+      - sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+      - sed -i -e '/foojay/d' settings.gradle.kts
     build:
-      - source "$HOME/.cargo/env"
+      - export PATH="$HOME/.cargo/bin:$PATH"
+      - rustup default 1.99.0
+      - rustup target add aarch64-linux-android x86_64-linux-android
+      - cargo install cargo-ndk@4.1.2 --locked
       - export ANDROID_NDK_HOME=$$NDK$$
       - export CRAFT_I18N_DIR=$$craft-i18n$$
+      - export CRAFT_I18N_REQUIRED=1
       - export RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"
-      - pushd .. && cargo ndk -t arm64-v8a -t x86_64 -o android/app/src/main/jniLibs build --release --offline -p wordcraft-android && popd
+      - pushd .. && cargo ndk -t arm64-v8a -t x86_64 -o android/app/src/main/jniLibs
+        build --release --locked -p wordcraft-android && popd
+    ndk: r27c
 
-AutoUpdateMode: Version v%v
+AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+(\.[0-9]+)*$
 CurrentVersion: 0.18.1.4
 CurrentVersionCode: 4

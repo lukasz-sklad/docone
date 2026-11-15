@@ -220,8 +220,8 @@ jobs:
           # Populate app-level F-Droid metadata so fdroid update includes Categories, License, and links.
           app_meta = "\n".join([
               "Categories:",
+              "  - Text Editor",
               "  - Writing",
-              "  - Office",
               "License: MIT OR Apache-2.0",
               "AuthorName: WordCraft contributors, lukasz-sklad",
               f"SourceCode: https://github.com/{owner_repo}",
