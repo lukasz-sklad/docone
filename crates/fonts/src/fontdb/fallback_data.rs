@@ -10,6 +10,7 @@ pub(super) struct SysFallback {
     pub(super) misses: std::collections::HashSet<char>,
     /// Preferred fallback families already loaded (or tried) by a fallback search.
     pub(super) tried: std::collections::HashSet<&'static str>,
+    pub(super) color_emoji_probed: bool,
 }
 
 /// Characters remembered as covered by no installed font (a cap on memory: once full the set

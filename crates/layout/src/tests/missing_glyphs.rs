@@ -242,3 +242,18 @@ fn an_equation_run_names_each_glyphs_characters() {
     assert!(found.iter().any(|(t, g, _)| (t.contains('\u{1D44E}') || t == "ab") && *g == 2), "{found:?}");
     assert!(found.iter().all(|(_, g, r)| g == r), "{found:?}");
 }
+
+#[test]
+fn variation_selector_16_never_turns_covered_symbols_into_missing_glyphs() {
+    use crate::display::Draw;
+    let d = Document::from_text("\u{2714}\u{FE0F} \u{2764}\u{FE0F}");
+    let l = lay(&d);
+    assert!(missing(&d, &l).is_empty());
+    let has_color_vs = FontDb::global().color_emoji_fallback('\u{2714}', 0).is_some();
+    if has_color_vs {
+        let saw_color = crate::display::page_display(&d, &l.pages[0], &DisplayOptions::default()).into_iter().any(
+            |it| matches!(it, Draw::Glyphs { face, text, .. } if (text.contains('\u{2714}') || text.contains('\u{2764}')) && face.has_color_glyphs()),
+        );
+        assert!(saw_color, "U+FE0F should select an installed colour emoji face");
+    }
+}

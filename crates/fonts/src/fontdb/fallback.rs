@@ -115,11 +115,11 @@ impl FontDb {
         // fonts (that breaks Arabic joining). Emoji prefer a colour emoji font.
         let rank = |f: &FontFace| {
             if crate::is_rtl(c) || arabic_block(c) {
-                RTL_FALLBACKS.iter().position(|n| f.family.eq_ignore_ascii_case(n)).unwrap_or(RTL_FALLBACKS.len())
+                (0usize, RTL_FALLBACKS.iter().position(|n| f.family.eq_ignore_ascii_case(n)).unwrap_or(RTL_FALLBACKS.len()))
             } else if crate::is_emoji(c) {
-                crate::fallback_rank(c, &f.family)
+                (usize::from(!f.has_color_glyphs()), crate::fallback_rank(c, &f.family))
             } else {
-                0
+                (0, 0)
             }
         };
         // Complex scripts (Myanmar, Khmer, Indic…): a font with OpenType layout tables, preferring
@@ -128,6 +128,56 @@ impl FontDb {
         let shaping = |f: &FontFace| if complex { (!f.has_layout_tables(), crate::fallback_rank(c, &f.family)) } else { (false, 0) };
         order.sort_by_key(|f| (rank(f), shaping(f), !f.family.eq_ignore_ascii_case(FALLBACK_FAMILY), f.italic, (f.weight - 400.0).abs() as i32));
         (order.into_iter().find(|f| f.covers(c)).cloned(), faces.len())
+    }
+
+    /// First loaded or installed colour-emoji face covering `c` (used when `U+FE0F` requests colour
+    /// emoji presentation so colour emoji beat monochrome symbol outlines).
+    pub fn color_emoji_fallback(&self, c: char, exclude: u32) -> Option<Arc<FontFace>> {
+        if let Some(face) = self.loaded_color_emoji(c, exclude) {
+            return Some(face);
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if !self.sys.lock().unwrap_or_else(std::sync::PoisonError::into_inner).enabled {
+                return None;
+            }
+            let _searching = self.searching.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(face) = self.loaded_color_emoji(c, exclude) {
+                return Some(face);
+            }
+            let probe = {
+                let mut sys = self.sys.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let first = !sys.color_emoji_probed;
+                sys.color_emoji_probed = true;
+                first
+            };
+            if probe {
+                let cataloged: Vec<String> = self.read_catalog().iter().map(|e| e.family.clone()).collect();
+                for fam in crate::script::COLOR_EMOJI {
+                    if !self.is_loaded(fam) && cataloged.iter().any(|f| f.eq_ignore_ascii_case(fam)) {
+                        self.load_cataloged(fam);
+                    }
+                }
+                for fam in cataloged {
+                    let lower = fam.to_ascii_lowercase();
+                    if (lower.contains("color emoji") || lower.contains("twemoji")) && !self.is_loaded(&fam) {
+                        self.load_cataloged(&fam);
+                    }
+                }
+                return self.loaded_color_emoji(c, exclude);
+            }
+        }
+        None
+    }
+
+    fn loaded_color_emoji(&self, c: char, exclude: u32) -> Option<Arc<FontFace>> {
+        let faces = self.read_faces();
+        let mut order: Vec<&Arc<FontFace>> = faces.iter().filter(|f| f.id != exclude && f.has_color_glyphs() && f.covers(c)).collect();
+        order.sort_by_key(|f| {
+            let pref = crate::script::COLOR_EMOJI.iter().position(|n| f.family.eq_ignore_ascii_case(n)).unwrap_or(crate::script::COLOR_EMOJI.len());
+            (pref, f.italic, (f.weight - 400.0).abs() as i32)
+        });
+        order.into_iter().next().cloned()
     }
 
     /// One fallback face for a run: the first face in the fallback order that covers **every**

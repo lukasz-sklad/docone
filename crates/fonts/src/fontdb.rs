@@ -145,7 +145,9 @@ impl FontDb {
     pub fn set_system_fallback(&self, on: bool) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.sys.lock().unwrap_or_else(std::sync::PoisonError::into_inner).enabled = on;
+            let mut sys = self.sys.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            sys.enabled = on;
+            sys.color_emoji_probed = false;
         }
         // Misses remembered while it was off may be found now.
         self.fallbacks.write().unwrap_or_else(std::sync::PoisonError::into_inner).map.clear();

@@ -234,6 +234,34 @@ fn faces_with_color_bitmaps_are_cataloged_without_outlines() {
 }
 
 #[test]
+fn faces_with_colr_tables_are_cataloged_without_outlines() {
+    let dir = font_dir("colr-only");
+    let colr = with_glyf_as("SourceSans3-Regular.ttf", b"COLR");
+    std::fs::write(dir.join("Sysfont-Regular.ttf"), &colr).unwrap();
+    let _ = std::fs::remove_file(dir.join("Sub/Sysfont-Bold.TTF"));
+    let db = FontDb::with_font_dirs(vec![dir]);
+    assert_eq!(db.styles(FAMILY), ["Regular"]);
+}
+
+#[test]
+fn color_emoji_fallback_prefers_color_face_over_monochrome_primary() {
+    let dir = font_dir("color-emoji-vs16");
+    let mut color = renamed_to("SourceSans3-Regular.ttf", "Twemoji Color");
+    let tables = u16::from_be_bytes([color[4], color[5]]) as usize;
+    let glyf = (0..tables).map(|r| 12 + r * 16).find(|&at| &color[at..at + 4] == b"glyf").unwrap();
+    color[glyf..glyf + 4].copy_from_slice(b"COLR");
+    std::fs::write(dir.join("TwemojiColor.ttf"), &color).unwrap();
+    let db = FontDb::with_font_dirs(vec![dir]);
+    let primary = db.face(FALLBACK_FAMILY, "Regular");
+    assert!(primary.covers('\u{2714}'));
+    assert!(!primary.has_color_glyphs());
+    assert!(db.color_emoji_fallback('\u{2714}', primary.id()).is_some_and(|f| f.family == "Twemoji Color" && f.has_color_glyphs()));
+    let disabled = FontDb::with_font_dirs(Vec::new());
+    disabled.set_system_fallback(false);
+    assert!(disabled.color_emoji_fallback('\u{2714}', primary.id()).is_none());
+}
+
+#[test]
 fn installed_weights_are_found_by_their_legacy_family_name() {
     // Semibold is not one of Regular, Bold and Italic: the font names it "Sysfont Sans3 Semibold"
     // (name ID 1), the way Word lists and stores it (#219).

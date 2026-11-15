@@ -16,6 +16,8 @@ use wordcraft_ui_egui::WordApp;
 pub const MAX_IME_BYTES: usize = 16 * 1024;
 /// Upper bound (dp) for any single display-cutout / system-bar / IME inset edge.
 pub const MAX_INSET_DP: f32 = 1600.0;
+/// Maximum width or height (px) rendered for an Android external `Presentation` display.
+pub const MAX_PRESENTATION_SIDE_PX: u32 = 1920;
 /// Movement threshold (in logical dp) separating a tap from a vertical/horizontal pan gesture.
 pub const TOUCH_SLOP_DP: f32 = 8.0;
 /// Mobile phone zoom preset (%) when no explicit user zoom override is stored yet.
@@ -671,6 +673,10 @@ pub struct MobileStrings {
     pub theme_light: &'static str,
     pub theme_sepia: &'static str,
     pub theme_dark: &'static str,
+    pub cast_screen: &'static str,
+    pub cast_opened_hint: &'static str,
+    pub cast_active_hint: &'static str,
+    pub cast_unavailable_hint: &'static str,
     pub nothing_to_read: &'static str,
     pub select_on_hint: &'static str,
     pub select_off_hint: &'static str,
@@ -700,6 +706,10 @@ const EN_STRINGS: MobileStrings = MobileStrings {
     theme_light: "Light",
     theme_sepia: "Sepia",
     theme_dark: "Dark",
+    cast_screen: "Cast to TV / external display",
+    cast_opened_hint: "Opened Cast settings — pick your TV or Single App",
+    cast_active_hint: "External display active: showing document view",
+    cast_unavailable_hint: "Cast settings are not available on this device",
     nothing_to_read: "Nothing to read",
     select_on_hint: "Select mode: drag finger across text to select",
     select_off_hint: "Scroll mode: drag to pan, tap to type",
@@ -729,6 +739,10 @@ const PL_STRINGS: MobileStrings = MobileStrings {
     theme_light: "Jasny",
     theme_sepia: "Sepia",
     theme_dark: "Ciemny",
+    cast_screen: "Prześlij na ekran TV",
+    cast_opened_hint: "Otwarto ustawienia przesyłania — wybierz TV lub jedną aplikację",
+    cast_active_hint: "Zewnętrzny ekran aktywny: podgląd dokumentu",
+    cast_unavailable_hint: "Ustawienia przesyłania nie są dostępne na tym urządzeniu",
     nothing_to_read: "Brak tekstu do czytania",
     select_on_hint: "Tryb zaznaczania: przeciągnij palcem po tekście",
     select_off_hint: "Tryb przewijania: przesuwaj palcem, stuknij aby pisać",
@@ -748,6 +762,40 @@ impl MobileStrings {
     pub fn format_status(self, page: usize, pages: usize, words: usize) -> String {
         format!("{}{page}/{pages} · {words}{}", self.page_short, self.words_short)
     }
+}
+
+/// Active Android external `Presentation` display geometry in physical pixels.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct PresentationDisplay {
+    pub width_px: u32,
+    pub height_px: u32,
+}
+
+/// Cache key identifying what is currently rendered on an external `Presentation` display.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PresentationKey {
+    pub doc_id: u64,
+    pub doc_rev: u64,
+    pub page_index: usize,
+    pub target_w: u32,
+    pub target_h: u32,
+    pub dark_mode: bool,
+    pub paper_rgb: [u8; 3],
+}
+
+/// Computes a bounded raster scale (pixels per pt) that fits `page_w_pt × page_h_pt` inside
+/// `display` while capping each dimension to [`MAX_PRESENTATION_SIDE_PX`].
+pub fn presentation_page_scale(page_w_pt: f32, page_h_pt: f32, display: PresentationDisplay) -> Option<f32> {
+    if !page_w_pt.is_finite() || !page_h_pt.is_finite() || page_w_pt <= 0.0 || page_h_pt <= 0.0 {
+        return None;
+    }
+    if display.width_px == 0 || display.height_px == 0 {
+        return None;
+    }
+    let max_w = display.width_px.min(MAX_PRESENTATION_SIDE_PX) as f32;
+    let max_h = display.height_px.min(MAX_PRESENTATION_SIDE_PX) as f32;
+    let scale = (max_w / page_w_pt).min(max_h / page_h_pt);
+    if scale.is_finite() && scale > 0.0 { Some(scale.clamp(0.01, 8.0)) } else { None }
 }
 
 /// User-facing Android appearance & paper preset cycled from the mobile quick bar.
@@ -1237,10 +1285,14 @@ mod tests {
         assert_eq!(AndroidThemeMode::Light.short_label_for(&en), "Light");
         assert_eq!(AndroidThemeMode::Dark.short_label_for(&en), "Dark");
         assert_eq!(en.format_status(1, 3, 42), "P1/3 · 42w");
+        assert!(
+            !en.cast_screen.is_empty() && !en.cast_opened_hint.is_empty() && !en.cast_active_hint.is_empty() && !en.cast_unavailable_hint.is_empty()
+        );
     }
 
     #[test]
     fn mobile_strings_polish_set_is_consistent() {
+        let en = mobile_strings("en");
         for code in ["pl", "pl-PL", "PL_pl"] {
             let pl = mobile_strings(code);
             assert_eq!((pl.open, pl.new_doc, pl.save, pl.undo, pl.redo), ("Otwórz", "Nowy", "Zapisz", "Cofnij", "Ponów"));
@@ -1252,7 +1304,29 @@ mod tests {
             assert_eq!(AndroidThemeMode::Light.short_label_for(&pl), "Jasny");
             assert_eq!(AndroidThemeMode::Dark.short_label_for(&pl), "Ciemny");
             assert_eq!(pl.format_status(2, 5, 19), "S2/5 · 19 sł.");
+            assert!(
+                !pl.cast_screen.is_empty()
+                    && !pl.cast_opened_hint.is_empty()
+                    && !pl.cast_active_hint.is_empty()
+                    && !pl.cast_unavailable_hint.is_empty()
+            );
+            assert_ne!(pl.cast_screen, en.cast_screen);
+            assert_ne!(pl.cast_opened_hint, en.cast_opened_hint);
         }
+    }
+
+    #[test]
+    fn presentation_page_scale_fits_and_caps_4k_and_rejects_hostile_inputs() {
+        assert_eq!(presentation_page_scale(0.0, 842.0, PresentationDisplay { width_px: 1920, height_px: 1080 }), None);
+        assert_eq!(presentation_page_scale(595.0, -10.0, PresentationDisplay { width_px: 1920, height_px: 1080 }), None);
+        assert_eq!(presentation_page_scale(f32::NAN, 842.0, PresentationDisplay { width_px: 1920, height_px: 1080 }), None);
+        assert_eq!(presentation_page_scale(595.0, 842.0, PresentationDisplay::default()), None);
+
+        let fhd = presentation_page_scale(595.0, 842.0, PresentationDisplay { width_px: 1920, height_px: 1080 }).expect("valid scale");
+        assert!((595.0 * fhd) <= 1920.5 && (842.0 * fhd - 1080.0).abs() < 0.5);
+
+        let uhd = presentation_page_scale(595.0, 842.0, PresentationDisplay { width_px: 3840, height_px: 2160 }).expect("valid 4k scale");
+        assert!((842.0 * uhd - 1920.0).abs() < 0.5, "4K must cap longest dimension at {MAX_PRESENTATION_SIDE_PX}px");
     }
 
     #[test]

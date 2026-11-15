@@ -237,6 +237,8 @@ fn arabic_candidates() -> &'static [&'static str] {
             "truetype/dejavu/DejaVuSans.ttf",
             "dejavu/DejaVuSans.ttf",
             "TTF/DejaVuSans.ttf",
+            "NotoNaskhArabic-Regular.ttf",
+            "NotoSansArabic-Regular.ttf",
         ]
     }
 }

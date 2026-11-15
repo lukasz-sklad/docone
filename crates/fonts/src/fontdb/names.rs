@@ -119,15 +119,15 @@ pub(crate) fn legacy_family(family: &str, style: &str) -> String {
     if extra.is_empty() { family.to_string() } else { format!("{family} {}", extra.join(" ")) }
 }
 
-/// The color bitmap tables the renderer draws glyphs from ([`FontFace::color_glyph`]).
+/// The colour glyph tables the renderer draws glyphs from ([`FontFace::color_glyph`]).
 #[cfg(not(target_arch = "wasm32"))]
-const COLOR_BITMAP_TABLES: [&[u8; 4]; 2] = [b"sbix", b"CBDT"];
+const COLOR_TABLES: [&[u8; 4]; 3] = [b"sbix", b"CBDT", b"COLR"];
 
 /// The names of every face in the font file at `path`, reading only its table directories and
 /// `name` and `fvar` tables: a scan opens hundreds of font files, many of them megabytes long
 /// (CJK collections run to 20 MB and more). A variable font yields one entry per named instance,
 /// as it does loaded. Faces with none of the [`OUTLINE_TABLES`](crate::ui_fallback::OUTLINE_TABLES)
-/// and [`COLOR_BITMAP_TABLES`] are left out.
+/// and [`COLOR_TABLES`] are left out.
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn file_face_names(path: &std::path::Path) -> Vec<Found> {
     use crate::ui_fallback::OUTLINE_TABLES;
@@ -157,7 +157,7 @@ pub(super) fn file_face_names(path: &std::path::Path) -> Vec<Found> {
             let dir = read_at(start.into(), 12)?;
             let tables = u16::from_be_bytes(dir.get(4..6)?.try_into().ok()?) as usize;
             let records = read_at(u64::from(start) + 12, tables * 16)?;
-            if !records.as_chunks::<16>().0.iter().any(|r| OUTLINE_TABLES.iter().chain(&COLOR_BITMAP_TABLES).any(|t| r.starts_with(*t))) {
+            if !records.as_chunks::<16>().0.iter().any(|r| OUTLINE_TABLES.iter().chain(&COLOR_TABLES).any(|t| r.starts_with(*t))) {
                 return None;
             }
             let mut table = |tag: &[u8; 4]| -> Option<Vec<u8>> {
@@ -205,6 +205,10 @@ pub(super) fn mini_font(tables: &[([u8; 4], Vec<u8>)]) -> Vec<u8> {
     font
 }
 
+/// Android system, OEM, and Mainline-updatable font folders (Android 12+).
+pub(super) const ANDROID_FONT_DIRS: &[&str] =
+    &["/data/fonts/files", "/product/fonts", "/system_ext/fonts", "/vendor/fonts", "/system/fonts", "/system/font"];
+
 /// The platform's font folders (the system's and the user's), scanned by [`FontDb::global`].
 /// Empty on wasm.
 pub fn system_font_dirs() -> Vec<std::path::PathBuf> {
@@ -234,6 +238,8 @@ pub fn system_font_dirs() -> Vec<std::path::PathBuf> {
         if let Some(l) = std::env::var_os("LOCALAPPDATA") {
             dirs.push(std::path::PathBuf::from(l).join("Microsoft\\Windows\\Fonts"));
         }
+    } else if cfg!(target_os = "android") {
+        dirs.extend(ANDROID_FONT_DIRS.iter().map(Into::into));
     } else {
         dirs.extend(["/usr/share/fonts", "/usr/local/share/fonts"].map(Into::into));
         if let Some(h) = &home {

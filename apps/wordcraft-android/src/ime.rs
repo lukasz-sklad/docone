@@ -18,7 +18,9 @@ use jni::{Env, EnvUnowned, JavaVM, jni_sig, jni_str};
 use wordcraft_engine::speech::PlatformSpoken;
 use wordcraft_ui_egui::FileDialogAnswer;
 
-use crate::mobile::{AndroidInput, AndroidKey, ImeFrameSlice, MAX_IME_BYTES, QueuedInput, SafeInsetsPx, take_ime_frame_slice, truncate_utf8_bytes};
+use crate::mobile::{
+    AndroidInput, AndroidKey, ImeFrameSlice, MAX_IME_BYTES, PresentationDisplay, QueuedInput, SafeInsetsPx, take_ime_frame_slice, truncate_utf8_bytes,
+};
 
 const MAX_QUEUED_INPUTS: usize = 4096;
 const MAX_QUEUED_OPENS: usize = 32;
@@ -70,6 +72,8 @@ static QUEUES: Mutex<SharedQueues> = Mutex::new(SharedQueues {
 static SYSTEM_NIGHT_MODE: AtomicU8 = AtomicU8::new(2);
 /// True when the latest pointer event came from a mouse/trackpad rather than finger touch.
 static POINTER_IS_MOUSE: AtomicBool = AtomicBool::new(false);
+/// Attached secondary Android `Presentation` display + dirty flag.
+static PRESENTATION_DISPLAY: Mutex<(Option<PresentationDisplay>, bool)> = Mutex::new((None, false));
 
 static WAKER: Mutex<Option<AndroidAppWaker>> = Mutex::new(None);
 static LOGGER_INIT: Once = Once::new();
@@ -137,6 +141,9 @@ pub fn bind_waker(waker: AndroidAppWaker) {
         q.ime_dismissed = false;
         q.file_answer = None;
         q.insets_changed = true;
+    }
+    if let Ok(mut guard) = PRESENTATION_DISPLAY.lock() {
+        guard.1 = true;
     }
 }
 
@@ -228,6 +235,15 @@ pub fn take_file_answer() -> Option<PickedAnswer> {
 /// Drains incoming `ACTION_VIEW` document staging requests.
 pub fn drain_pending_opens() -> Vec<PendingOpen> {
     QUEUES.lock().map(|mut q| std::mem::take(&mut q.pending_opens)).unwrap_or_default()
+}
+
+/// Returns the current attached presentation display (if any) and whether it changed since last read.
+pub fn take_presentation_display() -> (Option<PresentationDisplay>, bool) {
+    let Ok(mut guard) = PRESENTATION_DISPLAY.lock() else {
+        return (None, false);
+    };
+    let changed = std::mem::take(&mut guard.1);
+    (guard.0, changed)
 }
 
 #[derive(Clone)]
@@ -608,6 +624,34 @@ pub extern "system" fn Java_one_lmk_wordcraft_WordCraftActivity_nativeOnMouseHov
     }
     if let Ok(mut q) = QUEUES.lock() {
         q.mouse_hover_px = Some((x_px, y_px));
+    }
+    wake_ui();
+}
+
+/// Called from `WordCraftActivity` when a secondary `Presentation` display attaches, resizes, or detaches.
+#[allow(unsafe_code)]
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_one_lmk_wordcraft_WordCraftActivity_nativeOnPresentationDisplay(
+    _env: EnvUnowned<'_>,
+    _obj: JObject<'_>,
+    active: jint,
+    width_px: jint,
+    height_px: jint,
+) {
+    let next = if active != 0 {
+        if width_px <= 0 || height_px <= 0 {
+            return;
+        }
+        Some(PresentationDisplay {
+            width_px: u32::try_from(width_px).unwrap_or(0).clamp(1, 16_384),
+            height_px: u32::try_from(height_px).unwrap_or(0).clamp(1, 16_384),
+        })
+    } else {
+        None
+    };
+    if let Ok(mut guard) = PRESENTATION_DISPLAY.lock() {
+        guard.0 = next;
+        guard.1 = true;
     }
     wake_ui();
 }

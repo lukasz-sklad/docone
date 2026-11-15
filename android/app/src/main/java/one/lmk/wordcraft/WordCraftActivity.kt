@@ -1,11 +1,14 @@
 package one.lmk.wordcraft
 
+import android.app.Presentation
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Point
 import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.net.Uri
@@ -18,6 +21,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.text.InputType
 import android.text.TextUtils
+import android.view.Display
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -25,6 +29,8 @@ import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.CorrectionInfo
 import android.view.inputmethod.EditorInfo
@@ -45,6 +51,7 @@ import com.google.androidgamesdk.GameActivity
 import com.google.androidgamesdk.gametextinput.InputConnection as GameTextInputConnection
 import java.io.File
 import java.io.FileInputStream
+import java.nio.ByteBuffer
 import java.util.Locale
 import java.util.UUID
 
@@ -155,6 +162,7 @@ class WordCraftActivity : GameActivity() {
 
         installInsetsListener()
         registerDisplayListener()
+        syncPresentationDisplay()
         installFocusGuard()
         syncSystemNightMode(resources.configuration)
         val isNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -165,6 +173,7 @@ class WordCraftActivity : GameActivity() {
 
     override fun onDestroy() {
         unregisterDisplayListener()
+        dismissPresentation()
         synchronized(ttsLock) {
             activeUtteranceId = ""
             activeUtteranceState = TTS_STATE_STOPPED
@@ -246,9 +255,13 @@ class WordCraftActivity : GameActivity() {
         return ev.pointerCount > 0 && ev.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE
     }
 
+    private var activePresentation: DocumentPresentation? = null
+    private var lastPresentationSpec: PresentationDisplaySpec? = null
+
     override fun onResume() {
         super.onResume()
         requestSafeInsets()
+        syncPresentationDisplay()
         if (imeWanted) {
             imeProxy.post {
                 if (imeWanted) {
@@ -256,6 +269,11 @@ class WordCraftActivity : GameActivity() {
                 }
             }
         }
+    }
+
+    override fun onStop() {
+        dismissPresentation()
+        super.onStop()
     }
 
     @Suppress("DEPRECATION")
@@ -338,15 +356,24 @@ class WordCraftActivity : GameActivity() {
         val manager = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager ?: return
         val listener = object : DisplayManager.DisplayListener {
             override fun onDisplayAdded(displayId: Int) {
-                window.decorView.post { requestSafeInsets() }
+                window.decorView.post {
+                    requestSafeInsets()
+                    syncPresentationDisplay()
+                }
             }
 
             override fun onDisplayRemoved(displayId: Int) {
-                window.decorView.post { requestSafeInsets() }
+                window.decorView.post {
+                    requestSafeInsets()
+                    syncPresentationDisplay()
+                }
             }
 
             override fun onDisplayChanged(displayId: Int) {
-                window.decorView.post { requestSafeInsets() }
+                window.decorView.post {
+                    requestSafeInsets()
+                    syncPresentationDisplay()
+                }
             }
         }
         displayListener = listener
@@ -358,6 +385,186 @@ class WordCraftActivity : GameActivity() {
         displayListener = null
         val manager = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager ?: return
         manager.unregisterDisplayListener(listener)
+    }
+
+    @Suppress("unused")
+    fun openCastSettings(): Int {
+        val actions = CastDisplayHelper.castSettingsIntentActions()
+        if (actions.isEmpty()) return 0
+        runOnUiThread {
+            for (action in actions) {
+                try {
+                    startActivity(Intent(action))
+                    break
+                } catch (_: Throwable) {
+                }
+            }
+        }
+        return 1
+    }
+
+    @Suppress("unused")
+    fun updatePresentationFrame(rgba: ByteArray, width: Int, height: Int, backdropArgb: Int) {
+        if (!CastDisplayHelper.isValidPresentationFrame(width, height, rgba.size)) return
+        val bitmap = try {
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+                copyPixelsFromBuffer(ByteBuffer.wrap(rgba))
+            }
+        } catch (_: Throwable) {
+            return
+        }
+        runOnUiThread {
+            val presentation = activePresentation
+            if (isFinishing || isDestroyed || presentation == null || !presentation.isShowing) {
+                if (!bitmap.isRecycled) bitmap.recycle()
+                return@runOnUiThread
+            }
+            presentation.updateBitmap(bitmap, backdropArgb)
+        }
+    }
+
+    @Suppress("unused")
+    fun clearPresentation() {
+        runOnUiThread {
+            activePresentation?.clearFrame()
+        }
+    }
+
+    private fun syncPresentationDisplay() {
+        val manager = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager ?: return
+        val displays = manager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+        val specs = displays.map { display ->
+            val size = queryDisplaySize(display)
+            PresentationDisplaySpec(
+                displayId = display.displayId,
+                widthPx = size.x,
+                heightPx = size.y,
+                isPresentationFlag = (display.flags and Display.FLAG_PRESENTATION) != 0,
+                stateOn = display.state != Display.STATE_OFF,
+            )
+        }
+        val preferred = CastDisplayHelper.selectPreferredPresentationDisplay(specs)
+        if (preferred == null) {
+            dismissPresentation()
+            return
+        }
+        val targetDisplay = displays.firstOrNull { it.displayId == preferred.displayId }
+        if (targetDisplay == null) {
+            dismissPresentation()
+            return
+        }
+        val current = activePresentation
+        if (current != null && current.isShowing && lastPresentationSpec == preferred) {
+            return
+        }
+        dismissPresentationQuietly()
+        val presentation = DocumentPresentation(this, targetDisplay)
+        try {
+            presentation.show()
+            activePresentation = presentation
+            lastPresentationSpec = preferred
+            nativeOnPresentationDisplay(1, preferred.widthPx, preferred.heightPx)
+        } catch (_: Throwable) {
+            try {
+                presentation.dismiss()
+            } catch (_: Throwable) {
+            }
+            activePresentation = null
+            lastPresentationSpec = null
+            nativeOnPresentationDisplay(0, 0, 0)
+        }
+    }
+
+    private fun queryDisplaySize(display: Display): Point {
+        val mode = display.mode
+        if (mode.physicalWidth > 0 && mode.physicalHeight > 0) {
+            return Point(mode.physicalWidth, mode.physicalHeight)
+        }
+        val pt = Point()
+        @Suppress("DEPRECATION")
+        display.getRealSize(pt)
+        return pt
+    }
+
+    private fun dismissPresentation() {
+        val hadActive = activePresentation != null || lastPresentationSpec != null
+        dismissPresentationQuietly()
+        if (hadActive) {
+            nativeOnPresentationDisplay(0, 0, 0)
+        }
+    }
+
+    private fun dismissPresentationQuietly() {
+        val presentation = activePresentation
+        activePresentation = null
+        lastPresentationSpec = null
+        if (presentation != null) {
+            try {
+                presentation.dismiss()
+            } catch (_: Throwable) {
+            }
+        }
+    }
+
+    private inner class DocumentPresentation(
+        outerContext: Context,
+        display: Display,
+    ) : Presentation(outerContext, display) {
+        private var containerView: FrameLayout? = null
+        private var imageView: ImageView? = null
+        private var currentBitmap: Bitmap? = null
+        private var backdropArgb: Int = Color.rgb(0x20, 0x24, 0x2C)
+
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            val container = FrameLayout(context).apply {
+                setBackgroundColor(backdropArgb)
+            }
+            val image = ImageView(context).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                adjustViewBounds = false
+            }
+            container.addView(
+                image,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ),
+            )
+            currentBitmap?.let { bmp ->
+                if (!bmp.isRecycled) {
+                    image.setImageBitmap(bmp)
+                }
+            }
+            containerView = container
+            imageView = image
+            setContentView(container)
+        }
+
+        fun updateBitmap(bitmap: Bitmap, backdrop: Int) {
+            val previous = currentBitmap
+            currentBitmap = bitmap
+            backdropArgb = backdrop
+            containerView?.setBackgroundColor(backdrop)
+            imageView?.setImageBitmap(bitmap)
+            if (previous != null && previous !== bitmap && !previous.isRecycled) {
+                previous.recycle()
+            }
+        }
+
+        fun clearFrame() {
+            val previous = currentBitmap
+            currentBitmap = null
+            imageView?.setImageDrawable(null)
+            if (previous != null && !previous.isRecycled) {
+                previous.recycle()
+            }
+        }
+
+        override fun onStop() {
+            clearFrame()
+            super.onStop()
+        }
     }
 
     private fun installFocusGuard() {
@@ -1159,4 +1366,5 @@ class WordCraftActivity : GameActivity() {
     private external fun nativeOnPointerIsMouse(isMouse: Int)
     private external fun nativeOnMouseWheel(hScroll: Float, vScroll: Float)
     private external fun nativeOnMouseHover(xPx: Float, yPx: Float)
+    private external fun nativeOnPresentationDisplay(active: Int, widthPx: Int, heightPx: Int)
 }

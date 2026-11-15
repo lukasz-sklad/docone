@@ -68,9 +68,9 @@ impl<'a> Builder<'a> {
         let mut seg_start = 0;
         let mut cur: Option<SegKey> = None;
         let mut segs = Vec::new();
-        for (i, c) in text.char_indices() {
+        for (i, raw_c) in text.char_indices() {
             let rtl = use_levels && levels.get(lbase + i).is_some_and(|l| l % 2 == 1);
-            let c = show(c);
+            let c = show(raw_c);
             let dc = self.numeral_char(context, i, c, rtl);
             let mark = is_mark(c);
             let complex = match cur {
@@ -78,8 +78,18 @@ impl<'a> Builder<'a> {
                 _ => rc_cs.is_some() && rc.uses_complex(dc),
             };
             let primary = if complex { primary_cs.unwrap_or(primary) } else { primary };
+            let wants_color = sym.is_none()
+                && !raw_c.is_ascii()
+                && !mark
+                && !c.is_whitespace()
+                && !c.is_control()
+                && !primary.has_color_glyphs()
+                && text.get(i + raw_c.len_utf8()..).is_some_and(|rest| rest.starts_with('\u{FE0F}'));
+            let emoji_face =
+                wants_color.then(|| wordcraft_fonts::FontDb::global().color_emoji_fallback(dc, primary.id()).map(|f| FaceRef::of(&f))).flatten();
             let face = match cur {
                 Some(k) if mark => k.face,
+                _ if emoji_face.is_some() => emoji_face,
                 _ if !complex && east_asian(c) && primary_ea.is_some_and(|f| f.covers(c)) => primary_ea,
                 _ if !c.is_control() && c != SOFT_HYPHEN && run_face.is_some_and(|f| f.covers(dc)) => run_face,
                 _ if primary.covers(dc) || c.is_whitespace() || c.is_control() || c == SOFT_HYPHEN => None,

@@ -114,7 +114,7 @@ pub fn script_fallbacks(c: char) -> &'static [&'static str] {
 
 /// The platforms' colour emoji fonts. Emoji prefer them over the monochrome symbol fonts that
 /// also cover many emoji (Windows' Segoe UI Symbol has ✅, so it drew in black and white).
-const COLOR_EMOJI: &[&str] = &["Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"];
+pub(crate) const COLOR_EMOJI: &[&str] = &["Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"];
 
 /// Characters drawn as emoji by default (Unicode `Emoji_Presentation`): the BMP ones listed in
 /// emoji-data.txt, and the pictograph blocks from U+1F000.

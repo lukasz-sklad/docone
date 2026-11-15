@@ -27,9 +27,10 @@ use wordcraft_ui_egui::{FileDialogAnswer, FileDialogRequest, Services, UiState, 
 
 use crate::ime;
 use crate::mobile::{
-    self, AndroidThemeMode, CzytajController, MobileStrings, SafeInsetsDp, TouchGestureFilter, apply_initial_mobile_defaults,
-    apply_initial_viewport_zoom, czytaj_is_playing, document_pan_rect, effective_ime_wanted, hover_to_egui_event, mobile_strings, prefs_write_atomic,
-    step_utf8_by_chars, to_egui_events, toggle_read_aloud_window, utf8_byte_to_utf16_offset, wheel_to_egui_event,
+    self, AndroidThemeMode, CzytajController, MobileStrings, PresentationDisplay, PresentationKey, SafeInsetsDp, TouchGestureFilter,
+    apply_initial_mobile_defaults, apply_initial_viewport_zoom, czytaj_is_playing, document_pan_rect, effective_ime_wanted, hover_to_egui_event,
+    mobile_strings, prefs_write_atomic, presentation_page_scale, step_utf8_by_chars, to_egui_events, toggle_read_aloud_window,
+    utf8_byte_to_utf16_offset, wheel_to_egui_event,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -186,6 +187,40 @@ impl ActivityBridge {
             })
             .is_ok()
     }
+
+    fn open_cast_settings(&self) -> bool {
+        self.vm
+            .attach_current_thread(|env| -> jni::errors::Result<bool> {
+                let opened = env.call_method(&*self.activity, jni_str!("openCastSettings"), jni_sig!("()I"), &[])?.i()?;
+                Ok(opened != 0)
+            })
+            .unwrap_or(false)
+    }
+
+    fn update_presentation_frame(&self, pixels: &[u8], width: u32, height: u32, backdrop_argb: i32) {
+        let Ok(w) = i32::try_from(width) else { return };
+        let Ok(h) = i32::try_from(height) else { return };
+        if w <= 0 || h <= 0 || pixels.len() != (width as usize).saturating_mul(height as usize).saturating_mul(4) {
+            return;
+        }
+        let _ = self.vm.attach_current_thread(|env| -> jni::errors::Result<()> {
+            let jbytes = env.byte_array_from_slice(pixels)?;
+            let _ = env.call_method(
+                &*self.activity,
+                jni_str!("updatePresentationFrame"),
+                jni_sig!("([BIII)V"),
+                &[JValue::Object(&jbytes), JValue::Int(w), JValue::Int(h), JValue::Int(backdrop_argb)],
+            )?;
+            Ok(())
+        });
+    }
+
+    fn clear_presentation(&self) {
+        let _ = self.vm.attach_current_thread(|env| -> jni::errors::Result<()> {
+            let _ = env.call_method(&*self.activity, jni_str!("clearPresentation"), jni_sig!("()V"), &[])?;
+            Ok(())
+        });
+    }
 }
 
 #[derive(Default)]
@@ -251,10 +286,13 @@ struct AndroidShell {
     last_saved_prefs_json: String,
     czytaj: CzytajController,
     applied_initial_viewport_zoom: bool,
+    presentation_display: Option<PresentationDisplay>,
+    last_presentation_key: Option<PresentationKey>,
 }
 
 impl AndroidShell {
     fn new(cc: &eframe::CreationContext<'_>, bridge: ActivityBridge, files_dir: PathBuf) -> Self {
+        wordcraft_fonts::FontDb::global().scan_in_background();
         let saf = Arc::new(Mutex::new(SafState::default()));
         let services = build_services(&bridge, &saf);
         let mut word_app = WordApp::new(Session::new(Document::new()), services);
@@ -292,6 +330,8 @@ impl AndroidShell {
             last_saved_prefs_json: initial_prefs,
             czytaj: CzytajController::default(),
             applied_initial_viewport_zoom: false,
+            presentation_display: None,
+            last_presentation_key: None,
         }
     }
 
@@ -463,7 +503,7 @@ impl AndroidShell {
                     self.draw_narrow_bar_row(
                         ui,
                         "android_bar_row1",
-                        132.0,
+                        164.0,
                         |shell, ui| shell.draw_doc_buttons(ui, s, compact),
                         |shell, ui| shell.draw_theme_and_zoom_rtl(ui, s, compact),
                         |shell, ui| shell.draw_zoom_and_theme_ltr(ui, s, compact),
@@ -579,6 +619,9 @@ impl AndroidShell {
     }
 
     fn draw_theme_and_zoom_rtl(&mut self, ui: &mut Ui, s: MobileStrings, compact: bool) {
+        if cast_display_button(ui, self.presentation_display.is_some(), s, compact).clicked() {
+            self.on_cast_button_clicked();
+        }
         if theme_mode_button(ui, self.theme_mode, s, compact).clicked() {
             self.theme_mode = self.theme_mode.cycle_next();
             self.theme_mode.apply(&mut self.app);
@@ -618,6 +661,71 @@ impl AndroidShell {
             self.theme_mode.apply(&mut self.app);
             save_theme_mode(&self.files_dir, self.theme_mode);
         }
+        if cast_display_button(ui, self.presentation_display.is_some(), s, compact).clicked() {
+            self.on_cast_button_clicked();
+        }
+    }
+
+    fn on_cast_button_clicked(&mut self) {
+        let s = mobile_strings(i18n::current().code());
+        if self.bridge.open_cast_settings() {
+            let msg = if self.presentation_display.is_some() { s.cast_active_hint } else { s.cast_opened_hint };
+            self.app.status(msg);
+        } else {
+            self.app.status(s.cast_unavailable_hint);
+        }
+    }
+
+    fn sync_presentation_display(&mut self) {
+        let (display, display_changed) = crate::ime::take_presentation_display();
+        if display_changed {
+            self.presentation_display = display;
+            self.last_presentation_key = None;
+            if display.is_none() {
+                self.bridge.clear_presentation();
+                return;
+            }
+        }
+        if let Some(active) = self.presentation_display {
+            self.render_and_send_presentation(active);
+        }
+    }
+
+    fn render_and_send_presentation(&mut self, display: PresentationDisplay) {
+        let doc_id = self.app.session.document_id();
+        let doc_rev = self.app.session.rev();
+        let layout = self.app.session.layout();
+        let Some(page_index) = (!layout.pages.is_empty()).then(|| self.app.session.current_pages(&layout).0.min(layout.pages.len() - 1)) else {
+            if self.last_presentation_key.take().is_some() {
+                self.bridge.clear_presentation();
+            }
+            return;
+        };
+        let page = &layout.pages[page_index];
+        let Some(scale) = presentation_page_scale(page.w, page.h, display) else {
+            return;
+        };
+        let opts = presentation_render_options(&self.app);
+        let wordcraft_engine::doc::props::Rgb(r, g, b) = opts.paper_of(&self.app.session.doc);
+        let key = PresentationKey {
+            doc_id,
+            doc_rev,
+            page_index,
+            target_w: display.width_px,
+            target_h: display.height_px,
+            dark_mode: opts.dark,
+            paper_rgb: [r, g, b],
+        };
+        if self.last_presentation_key == Some(key) {
+            return;
+        }
+        let rendered = wordcraft_render::render_page(&self.app.session.doc, page, scale, &opts);
+        if rendered.width == 0 || rendered.height == 0 || rendered.pixels.is_empty() {
+            return;
+        }
+        let backdrop_argb = if opts.dark { 0xFF14161A_u32 as i32 } else { 0xFF20242C_u32 as i32 };
+        self.bridge.update_presentation_frame(&rendered.pixels, rendered.width, rendered.height, backdrop_argb);
+        self.last_presentation_key = Some(key);
     }
 
     fn reset_default_zoom(&mut self, ui: &Ui) {
@@ -677,6 +785,7 @@ impl eframe::App for AndroidShell {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.handle_incoming_opens_and_answers();
         self.app.logic(ctx);
+        self.sync_presentation_display();
         self.sync_insets_and_bars(ctx);
         self.flush_saf_and_clipboard(ctx);
         self.persist_prefs_if_changed();
@@ -754,6 +863,9 @@ impl eframe::App for AndroidShell {
 
     fn on_exit(&mut self) {
         let _ = self.app.execute("readAloud.stop", json!({}));
+        self.presentation_display = None;
+        self.last_presentation_key = None;
+        self.bridge.clear_presentation();
         self.app.session.finish_recovery();
         if let Ok(mut saf) = self.saf.lock() {
             let _ = saf.flush_changed_outputs(&self.bridge);
@@ -946,6 +1058,59 @@ fn read_aloud_window_button(ui: &mut Ui, open: bool, active: bool, s: MobileStri
         if !open {
             p.line_segment([pos2(c.x - 5.5, c.y + 4.5), pos2(c.x + 5.5, c.y - 4.5)], Stroke::new(1.4, stroke_col));
         }
+    }
+    resp
+}
+
+fn presentation_render_options(app: &WordApp) -> wordcraft_render::RenderOptions {
+    use wordcraft_engine::cmd::view::ReadPageColor;
+
+    let v = &app.session.view;
+    let dark = if v.read_mode { v.read_page_color == ReadPageColor::Inverse } else { v.dark_mode };
+    let read_paper = v.read_mode.then(|| match v.read_page_color {
+        ReadPageColor::None | ReadPageColor::Inverse => wordcraft_engine::doc::props::Rgb::WHITE,
+        ReadPageColor::Sepia => wordcraft_render::SEPIA_PAPER,
+    });
+    let mut opts =
+        wordcraft_render::RenderOptions { paper: app.session.prefs.paper_color.color(), dark, read_paper, hinting: true, ..Default::default() };
+    opts.display.marks = false;
+    opts.display.placeholders = false;
+    opts.display.markup = v.show_markup;
+    opts.display.revisions = app.session.prefs.markup.clone();
+    opts.display.dim_header = false;
+    opts.display.hide_ink = v.hide_ink;
+    opts
+}
+
+fn paint_cast_arc(painter: &egui::Painter, origin: Pos2, radius: f32, stroke: Stroke) {
+    const SEGMENTS: usize = 6;
+    let pts: Vec<Pos2> = (0..=SEGMENTS)
+        .map(|i| {
+            let theta = -std::f32::consts::FRAC_PI_2 * (i as f32 / SEGMENTS as f32);
+            pos2(origin.x + theta.cos() * radius, origin.y + theta.sin() * radius)
+        })
+        .collect();
+    painter.add(Shape::line(pts, stroke));
+}
+
+/// Compact TV / wireless-cast icon button opening Android's native offline Cast settings and
+/// highlighting while an external `Presentation` screen is active.
+fn cast_display_button(ui: &mut Ui, active: bool, s: MobileStrings, compact: bool) -> egui::Response {
+    let size = vec2(if compact { 24.0 } else { 26.0 }, 26.0);
+    let (rect, resp, t) = allocate_icon_pill(ui, size, active, s.cast_screen);
+    if ui.is_rect_visible(rect) {
+        let c = rect.center();
+        let stroke_col = if active { t.accent } else { t.text };
+        let wave_col = if active { t.accent } else { t.text_dim };
+        let screen = Rect::from_center_size(c + vec2(0.0, -0.8), vec2(13.5, 9.5));
+        let p = ui.painter();
+        p.rect_stroke(screen, 1.5, Stroke::new(1.3, stroke_col), egui::StrokeKind::Middle);
+        p.line_segment([pos2(c.x, screen.max.y), pos2(c.x, screen.max.y + 1.8)], Stroke::new(1.3, stroke_col));
+        p.line_segment([pos2(c.x - 3.6, screen.max.y + 1.8), pos2(c.x + 3.6, screen.max.y + 1.8)], Stroke::new(1.3, stroke_col));
+        let origin = pos2(screen.min.x + 2.5, screen.max.y - 2.0);
+        p.circle_filled(origin, 1.0, wave_col);
+        paint_cast_arc(p, origin, 2.6, Stroke::new(1.1, wave_col));
+        paint_cast_arc(p, origin, 4.6, Stroke::new(1.1, wave_col));
     }
     resp
 }

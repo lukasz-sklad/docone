@@ -42,12 +42,26 @@ use super::face::FlipPen;
 use super::*;
 
 #[test]
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_os = "android"), not(target_arch = "wasm32")))]
 fn system_font_dirs_include_the_flatpak_host_folders() {
     // Inside a Flatpak, /usr/share/fonts is the runtime's: the host's fonts are under /run/host (#1937).
     let dirs = system_font_dirs();
     for d in ["/usr/share/fonts", "/run/host/fonts", "/run/host/local-fonts", "/run/host/user-fonts", "/run/host/user-fonts-legacy"] {
         assert!(dirs.contains(&std::path::PathBuf::from(d)), "{d} missing from {dirs:?}");
+    }
+}
+
+#[test]
+fn android_font_dirs_include_system_and_updatable_folders() {
+    for d in ["/system/fonts", "/product/fonts", "/system_ext/fonts", "/data/fonts/files"] {
+        assert!(super::names::ANDROID_FONT_DIRS.contains(&d), "{d} missing from {:?}", super::names::ANDROID_FONT_DIRS);
+    }
+    #[cfg(target_os = "android")]
+    {
+        let dirs = system_font_dirs();
+        for d in ["/system/fonts", "/product/fonts", "/system_ext/fonts", "/data/fonts/files"] {
+            assert!(dirs.contains(&std::path::PathBuf::from(d)), "{d} missing from {dirs:?}");
+        }
     }
 }
 
