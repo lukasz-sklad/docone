@@ -40,7 +40,7 @@ Kompletny przewodnik techniczny (oraz zestaw instrukcji startowych dla agenta/de
    * Bezwzględny zakaz kopiowania ikon, obrazów czy czcionek z produktów Microsoft/Adobe/Avid/Autodesk.
    * Każdy nowy plik assetu (w tym paczki językowe w `android/app/src/main/assets/`) musi mieć wpis w `ATTRIBUTION.md` w tym samym commicie — inaczej `cargo xtask assets` zakończy się błędem.
 4. **Zależność `craft-i18n` (`CRAFT_I18N_DIR`):**
-   * Wersję słowników i wzorców podziału wyrazów przypina plik `craft-i18n.rev` (`1e515422afdda2f317af430c1f9d68a5f83935b4`).
+   * Wersję słowników i wzorców podziału wyrazów przypina plik `craft-i18n.rev` (`e56d26244bbac099bfd42e23fb12f78a4be418a7`).
    * Podczas kompilacji Rusta i testów przekazuj `-e CRAFT_I18N_DIR=/craft-i18n` (zamontowane z `/home/deck/.cache/craft-i18n:ro`). W CI odpowiada za to `storytold/craft-common-actions/actions/checkout-craft-i18n@main` w `.github/workflows/android.yml`.
 5. **Nie łam budowy WASM i warstw:**
    * Każda zmiana w współdzielonych crate'ach musi przejść `cargo xtask layers` i `cargo xtask wasm`.
